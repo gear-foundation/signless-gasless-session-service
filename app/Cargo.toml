@@ -1,0 +1,11 @@
+[package]
+name = "sessions-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sails-rs = "0.4.0"
+schnorrkel = { version = "0.10", default-features = false, features = ["u64_backend"] }
+scale-info = { version = "2", default-features = false }
+parity-scale-codec = { version = "3", default-features = false }
+gstd = "=1.5.0"
