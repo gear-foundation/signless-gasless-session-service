@@ -1,7 +1,7 @@
 #![no_std]
 
 use sails_rs::prelude::*;
-mod session_generaion;
+use session_service::*;
 pub struct SessionsProgram(());
 
 #[program]
@@ -17,7 +17,7 @@ impl SessionsProgram {
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
- #[codec(crate = sails_rs::scale_codec)]
+#[codec(crate = sails_rs::scale_codec)]
 #[scale_info(crate = sails_rs::scale_info)]
 pub enum ActionsForSession {
     StartGame,

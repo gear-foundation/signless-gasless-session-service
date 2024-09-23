@@ -1,0 +1,10 @@
+[package]
+name = "session-service"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+gstd.workspace = true
+sails-rs.workspace = true
+schnorrkel.workspace = true
+
