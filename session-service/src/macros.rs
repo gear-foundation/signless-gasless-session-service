@@ -1,10 +1,42 @@
+/// This macro generates a session management system based on a provided enum of actions.
+/// It creates the necessary data structures for sessions, including handling of signatures
+/// and session storage, as well as a service for creating, deleting, and managing sessions.
+///
+/// # Example:
+/// ```rust, ignore
+/// #![no_std]
+/// use sails_rs::prelude::*;
+/// use session_service::*;
+/// pub struct SessionsProgram(());
+/// 
+/// #[program]
+/// impl SessionsProgram {
+///     pub async fn new(config: Config) -> Self {
+///         SessionService::init(config);
+///         Self(())
+///     }
+///     pub fn session(&self) -> SessionService {
+///         SessionService::new()
+///     }
+/// }
+/// 
+/// #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
+/// #[codec(crate = sails_rs::scale_codec)]
+/// #[scale_info(crate = sails_rs::scale_info)]
+/// pub enum ActionsForSession {
+///     StartGame,
+///     Move,
+///     Skip,
+/// }
+///
+/// generate_session_system!(ActionsForSession);
 #[macro_export]
 macro_rules! generate_session_system {
     ($actions_enum:ident) => {
-        use sails_rs::{collections::HashMap, gstd::service};
-        use gstd::{exec, msg, ext, format};
-        use schnorrkel::PublicKey;
+        use crate::{exec, msg, PublicKey};
         use sails_rs::fmt::Debug;
+        use sails_rs::{collections::HashMap, gstd::service};
+        use utils::panicking;
 
         #[derive(Default)]
         pub struct Storage(());
@@ -64,24 +96,22 @@ macro_rules! generate_session_system {
             ) {
                 let sessions = self.as_mut();
                 let config = self.config();
-                let event = panicking(|| {
-                    create_session(sessions, config, signature_data, signature)
-                });
-                self.notify_on(event.clone()).expect("Notification Error");
+                let event =
+                    panicking(|| create_session(sessions, config, signature_data, signature));
+                self.notify_on(event).expect("Notification Error");
             }
 
             pub fn delete_session_from_program(&mut self, session_for_account: ActorId) {
                 let sessions = self.as_mut();
-                let event = panicking(|| {
-                    delete_session_from_program(sessions, session_for_account)
-                });
-                self.notify_on(event.clone()).expect("Notification Error");
+                let event =
+                    panicking(|| delete_session_from_program(sessions, session_for_account));
+                self.notify_on(event).expect("Notification Error");
             }
 
             pub fn delete_session_from_account(&mut self) {
                 let sessions = self.as_mut();
                 let event = panicking(|| delete_session_from_account(sessions));
-                self.notify_on(event.clone()).expect("Notification Error");
+                self.notify_on(event).expect("Notification Error");
             }
 
             pub fn sessions(&self) -> Vec<(ActorId, SessionData)> {
@@ -101,7 +131,7 @@ macro_rules! generate_session_system {
         pub struct Config {
             pub gas_to_delete_session: u64,
             pub minimum_session_duration_ms: u64,
-            pub s_per_block: u64,
+            pub ms_per_block: u64,
         }
 
         #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
@@ -143,17 +173,6 @@ macro_rules! generate_session_system {
             pub allowed_actions: Vec<$actions_enum>,
         }
 
-        pub fn panicking<T, E: Debug, F: FnOnce() -> Result<T, E>>(f: F) -> T {
-            match f() {
-                Ok(v) => v,
-                Err(e) => panic(e),
-            }
-        }
-
-        pub fn panic(err: impl Debug) -> ! {
-            ext::panic(&format!("{err:?}"))
-        }
-
         pub fn create_session(
             sessions: &mut SessionMap,
             config: &Config,
@@ -170,8 +189,9 @@ macro_rules! generate_session_system {
 
             let expires = block_timestamp + signature_data.duration;
 
-            let number_of_blocks = u32::try_from(signature_data.duration.div_ceil(config.s_per_block * 1_000))
-                .expect("Duration is too large");
+            let number_of_blocks =
+                u32::try_from(signature_data.duration.div_ceil(config.ms_per_block))
+                    .expect("Duration is too large");
 
             if signature_data.allowed_actions.is_empty() {
                 return Err(SessionError::ThereAreNoAllowedMessages);
@@ -181,18 +201,17 @@ macro_rules! generate_session_system {
                 Some(sig_bytes) => {
                     check_if_session_exists(sessions, &signature_data.key)?;
                     let pub_key: [u8; 32] = (signature_data.key).into();
-                    let mut prefix = b"<Bytes>".to_vec();
-                    let mut message = SignatureData {
+                    let message = SignatureData {
                         key: msg_source,
                         duration: signature_data.duration,
                         allowed_actions: signature_data.allowed_actions.clone(),
                     }
                     .encode();
-                    let mut postfix = b"</Bytes>".to_vec();
-                    prefix.append(&mut message);
-                    prefix.append(&mut postfix);
 
-                    verify(&sig_bytes, prefix, pub_key)?;
+                    let complete_message =
+                        [b"<Bytes>".to_vec(), message, b"</Bytes>".to_vec()].concat();
+
+                    verify(&sig_bytes, complete_message, pub_key)?;
                     sessions.entry(signature_data.key).insert(SessionData {
                         key: msg_source,
                         expires,
@@ -201,9 +220,8 @@ macro_rules! generate_session_system {
                     });
                     signature_data.key
                 }
-                None => {
+                None => { 
                     check_if_session_exists(sessions, &msg_source)?;
-
                     sessions.entry(msg_source).insert(SessionData {
                         key: signature_data.key,
                         expires,
@@ -249,7 +267,9 @@ macro_rules! generate_session_system {
             Ok(Event::SessionDeleted)
         }
 
-        pub fn delete_session_from_account(sessions: &mut SessionMap) -> Result<Event, SessionError> {
+        pub fn delete_session_from_account(
+            sessions: &mut SessionMap,
+        ) -> Result<Event, SessionError> {
             if sessions.remove(&msg::source()).is_none() {
                 return Err(SessionError::NoSession);
             }
@@ -262,8 +282,9 @@ macro_rules! generate_session_system {
             pubkey: P,
         ) -> Result<(), SessionError> {
             let signature =
-                schnorrkel::Signature::from_bytes(signature).map_err(|_| SessionError::BadSignature)?;
-            let pub_key = PublicKey::from_bytes(pubkey.as_ref()).map_err(|_| SessionError::BadPublicKey)?;
+                Signature::from_bytes(signature).map_err(|_| SessionError::BadSignature)?;
+            let pub_key =
+                PublicKey::from_bytes(pubkey.as_ref()).map_err(|_| SessionError::BadPublicKey)?;
             pub_key
                 .verify_simple(b"substrate", message.as_ref(), &signature)
                 .map(|_| ())

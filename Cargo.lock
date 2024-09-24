@@ -2529,9 +2529,9 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "956ff9b67e26e1a6a866cb758f12c6f8746208489e3e4a4b5580802f2f0a587b"
+checksum = "f6e3919bbaa2945715f0bb6d3934a173d1e9a59ac23767fbaaef277265a7411b"
 dependencies = [
  "cfg-if",
  "ecdsa",
@@ -4097,11 +4097,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "session-service"
+version = "0.1.0"
+dependencies = [
+ "gstd",
+ "sails-rs",
+ "schnorrkel 0.10.2",
+]
+
+[[package]]
 name = "sessions"
 version = "0.1.0"
 dependencies = [
+ "rand_core 0.6.4",
  "sails-idl-gen",
  "sails-rs",
+ "schnorrkel 0.10.2",
  "sessions",
  "sessions-app",
  "sessions-client",
@@ -4112,11 +4123,8 @@ dependencies = [
 name = "sessions-app"
 version = "0.1.0"
 dependencies = [
- "gstd",
- "parity-scale-codec",
  "sails-rs",
- "scale-info",
- "schnorrkel 0.10.2",
+ "session-service",
 ]
 
 [[package]]
@@ -4219,9 +4227,9 @@ dependencies = [
 
 [[package]]
 name = "simdutf8"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f27f6278552951f1f2b8cf9da965d10969b2efdea95a6ec47987ab46edfe263a"
+checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
 name = "siphasher"
@@ -4888,18 +4896,18 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "thiserror"
-version = "1.0.63"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0342370b38b6a11b6cc11d6a805569958d54cfa061a29969c3b5ce2ea405724"
+checksum = "d50af8abc119fb8bb6dbabcfa89656f46f84aa0ac7688088608076ad2b459a84"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.63"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
+checksum = "08904e7672f5eb876eaaf87e0ce17857500934f4981c4a0ab2b4aa98baac7fc3"
 dependencies = [
  "proc-macro2",
  "quote",
