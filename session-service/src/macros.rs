@@ -3,7 +3,26 @@
 /// and session storage, as well as a service for creating, deleting, and managing sessions.
 ///
 /// # Example:
-/// ```rust
+/// ```rust, ignore
+/// #![no_std]
+/// use sails_rs::prelude::*;
+/// use session_service::*;
+/// pub struct SessionsProgram(());
+/// 
+/// #[program]
+/// impl SessionsProgram {
+///     pub async fn new(config: Config) -> Self {
+///         SessionService::init(config);
+///         Self(())
+///     }
+///     pub fn session(&self) -> SessionService {
+///         SessionService::new()
+///     }
+/// }
+/// 
+/// #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
+/// #[codec(crate = sails_rs::scale_codec)]
+/// #[scale_info(crate = sails_rs::scale_info)]
 /// pub enum ActionsForSession {
 ///     StartGame,
 ///     Move,
@@ -112,7 +131,7 @@ macro_rules! generate_session_system {
         pub struct Config {
             pub gas_to_delete_session: u64,
             pub minimum_session_duration_ms: u64,
-            pub s_per_block: u64,
+            pub ms_per_block: u64,
         }
 
         #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
@@ -171,7 +190,7 @@ macro_rules! generate_session_system {
             let expires = block_timestamp + signature_data.duration;
 
             let number_of_blocks =
-                u32::try_from(signature_data.duration.div_ceil(config.s_per_block * 1_000))
+                u32::try_from(signature_data.duration.div_ceil(config.ms_per_block))
                     .expect("Duration is too large");
 
             if signature_data.allowed_actions.is_empty() {

@@ -19,7 +19,7 @@ async fn create_session_works() {
     let config = Config {
         gas_to_delete_session: 10_000_000_000,
         minimum_session_duration_ms: 180_000,
-        s_per_block: 3,
+        ms_per_block: 3_000,
     };
 
     let program_id = program_factory
@@ -108,7 +108,7 @@ async fn create_session_failures() {
     let config = Config {
         gas_to_delete_session: 10_000_000_000,
         minimum_session_duration_ms: 180_000,
-        s_per_block: 3,
+        ms_per_block: 3_000,
     };
 
     let program_id = program_factory
@@ -204,7 +204,7 @@ async fn delete_session_from_account_works() {
     let config = Config {
         gas_to_delete_session: 10_000_000_000,
         minimum_session_duration_ms: 180_000,
-        s_per_block: 3,
+        ms_per_block: 3_000,
     };
 
     let program_id = program_factory
