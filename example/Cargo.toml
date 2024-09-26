@@ -8,13 +8,13 @@ sessions-app = { path = "app" }
 
 [build-dependencies]
 sessions-app = { path = "app" }
-sails-rs = { version = "0.4.0", features = ["wasm-builder"] }
+sails-rs = { version = "0.5.0", features = ["wasm-builder"] }
 sails-idl-gen.workspace = true
 
 [dev-dependencies]
 sessions = { path = ".", features = ["wasm-binary"] }
 sessions-client = { path = "client" }
-sails-rs = { version = "0.4.0", features = ["gtest"] }
+sails-rs = { version = "0.5.0", features = ["gtest"] }
 tokio.workspace = true
 schnorrkel = { version = "0.10", default-features = false, features = ["u64_backend", "getrandom"] }
 rand_core = "0.6.4"

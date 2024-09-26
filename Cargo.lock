@@ -1794,9 +1794,9 @@ dependencies = [
 
 [[package]]
 name = "gear-sandbox"
-version = "1.5.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42a11eada83003e5d51ec0a63ab834161ff0eed9ff98efd774e72095e059d3e9"
+checksum = "5fab53f76dac024843b69043233d49e45260b6c197c8eb63d12e565b94fd47d7"
 dependencies = [
  "gear-sandbox-env",
  "gear-sandbox-interface",
@@ -1822,9 +1822,9 @@ dependencies = [
 
 [[package]]
 name = "gear-sandbox-host"
-version = "1.5.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f32c58ae124e317637cbd9061b1025d9af61525edc3d807c19cad60706f6dd42"
+checksum = "c3626a8fd010e99b32af8ace9d23f5fe721e2bd88f600ef5a17ab5f5cdfbdc65"
 dependencies = [
  "defer",
  "environmental",
@@ -1844,9 +1844,9 @@ dependencies = [
 
 [[package]]
 name = "gear-sandbox-interface"
-version = "1.5.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7df54d27cbe4c7778236c788c01fa30072af4f8040f1dfcd864a431402ab61e8"
+checksum = "b1383582f80fbbe2e0f10c5be5ff02b2f841709e3005efd5c400ea88a4235b80"
 dependencies = [
  "gear-sandbox-host",
  "gp-runtime-interface",
@@ -1921,9 +1921,9 @@ dependencies = [
 
 [[package]]
 name = "gear-wasm-instrument"
-version = "1.6.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a24cf73bd53798089108fb5b0ae33b5d894cd8088b5297dfbf6707393aaf733"
+checksum = "b8446dc4b4dc7a1fc30f1c4bd1a0e7bcee7d5e5f9d1edd1f99d96b73a4ff8cc4"
 dependencies = [
  "derive_more",
  "enum-iterator 1.5.0",
@@ -2035,9 +2035,9 @@ checksum = "32085ea23f3234fc7846555e85283ba4de91e21016dc0455a16286d87a292d64"
 
 [[package]]
 name = "gmeta"
-version = "1.5.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90b03d2f25e0172da8087b074599254d29501cdf6f20e2f62fc7804fad618bea"
+checksum = "6da903575539df73a5bf36a0d26a227a34479bed22c81018333d48aedc46b973"
 dependencies = [
  "blake2",
  "derive_more",
@@ -2593,9 +2593,9 @@ checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
 
 [[package]]
 name = "libc"
-version = "0.2.158"
+version = "0.2.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8adc4bb1803a324070e64a98ae98f38934d91957a99cfb3a43dcbc01bc56439"
+checksum = "561d97a539a36e26a9a5fad1ea11a3039a67714694aaa379433e580854bc3dc5"
 
 [[package]]
 name = "libc-print"
@@ -3794,9 +3794,9 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
 name = "sails-client-gen"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "298eecdb11ee41e68215a02c97541f2bcc7c24c310cec026483a9324254a283a"
+checksum = "503481b7d240abc0bb7c187ed9f4ebd677f872eb19646cf1c8fa1a8f97fa55d1"
 dependencies = [
  "anyhow",
  "convert_case 0.6.0",
@@ -3807,9 +3807,9 @@ dependencies = [
 
 [[package]]
 name = "sails-idl-gen"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9007c11042e82c2a1edf720ff510ba0996af4ee549dce3faba455679533f06d9"
+checksum = "8dc2e7d4e201aaf83210001163c487585093f6925dd4418d6b52f20cb840e246"
 dependencies = [
  "convert_case 0.6.0",
  "handlebars",
@@ -3822,9 +3822,9 @@ dependencies = [
 
 [[package]]
 name = "sails-idl-parser"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "711bea52cfacceeca67312491b905bd2df6a1a4c0969be313381b30367b54092"
+checksum = "ad0c48a07852f792a0e8b8955d2e3b1383a8eadb61ea5e6eed83e4f7a1035277"
 dependencies = [
  "lalrpop",
  "lalrpop-util",
@@ -3834,9 +3834,9 @@ dependencies = [
 
 [[package]]
 name = "sails-macros"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4efcda7e656871d17e79259110a6b17d0d660e2ab3f949a91d55c165bcbd4d0d"
+checksum = "99e50ef0bbb4ddfca2479f33aae0d33d5fecf86eeaa39a63e1a6b785605ffee9"
 dependencies = [
  "proc-macro-error",
  "sails-macros-core",
@@ -3844,9 +3844,9 @@ dependencies = [
 
 [[package]]
 name = "sails-macros-core"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3694ccad10e20282caf8111c39382c3e1f00433c5f0c48d4592e1f201b82f598"
+checksum = "2c866b06fc0a1bc08f8c0b549d7c13f56b270d753388777cdf4551c7ad3b7200"
 dependencies = [
  "convert_case 0.6.0",
  "parity-scale-codec",
@@ -3858,14 +3858,15 @@ dependencies = [
 
 [[package]]
 name = "sails-rs"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67effccdaef6232976af5cabf54775bd57e362b09e201ceb5e732f8dd7194c9c"
+checksum = "893c65b27bcaaaa5a0460a3f22126771f99f2ad171134e10a90589c563d52f48"
 dependencies = [
  "futures",
  "gear-core",
  "gear-core-errors",
  "gear-wasm-builder",
+ "gear-wasm-instrument",
  "gprimitives",
  "gstd",
  "gtest",
