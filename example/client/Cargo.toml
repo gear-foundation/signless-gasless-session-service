@@ -9,8 +9,8 @@ sails-rs.workspace = true
 
 [build-dependencies]
 sessions-app = { path = "../app" }
-sails-client-gen = "0.5.0"
-sails-idl-gen = "0.5.0"
+sails-client-gen = "0.5.1"
+sails-idl-gen = "0.5.1"
 
 [features]
 mocks = ["sails-rs/mockall", "dep:mockall"]
