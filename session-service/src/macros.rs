@@ -8,7 +8,7 @@
 /// use sails_rs::prelude::*;
 /// use session_service::*;
 /// pub struct SessionsProgram(());
-/// 
+///
 /// #[program]
 /// impl SessionsProgram {
 ///     pub async fn new(config: Config) -> Self {
@@ -19,7 +19,7 @@
 ///         SessionService::new()
 ///     }
 /// }
-/// 
+///
 /// #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
 /// #[codec(crate = sails_rs::scale_codec)]
 /// #[scale_info(crate = sails_rs::scale_info)]
@@ -98,20 +98,20 @@ macro_rules! generate_session_system {
                 let config = self.config();
                 let event =
                     panicking(|| create_session(sessions, config, signature_data, signature));
-                self.notify_on(event).expect("Notification Error");
+                self.emit_event(event).expect("Notification Error");
             }
 
             pub fn delete_session_from_program(&mut self, session_for_account: ActorId) {
                 let sessions = self.as_mut();
                 let event =
                     panicking(|| delete_session_from_program(sessions, session_for_account));
-                self.notify_on(event).expect("Notification Error");
+                self.emit_event(event).expect("Notification Error");
             }
 
             pub fn delete_session_from_account(&mut self) {
                 let sessions = self.as_mut();
                 let event = panicking(|| delete_session_from_account(sessions));
-                self.notify_on(event).expect("Notification Error");
+                self.emit_event(event).expect("Notification Error");
             }
 
             pub fn sessions(&self) -> Vec<(ActorId, SessionData)> {
@@ -220,7 +220,7 @@ macro_rules! generate_session_system {
                     });
                     signature_data.key
                 }
-                None => { 
+                None => {
                     check_if_session_exists(sessions, &msg_source)?;
                     sessions.entry(msg_source).insert(SessionData {
                         key: signature_data.key,

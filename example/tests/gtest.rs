@@ -1,6 +1,6 @@
-use sails_rs::{calls::*, gtest::calls::*, prelude::*};
-
 use rand_core::OsRng;
+use sails_rs::gtest::System;
+use sails_rs::{calls::*, gtest::calls::*, prelude::*};
 use schnorrkel::Keypair;
 use sessions_client::{traits::*, ActionsForSession, Config, SignatureData};
 
@@ -8,7 +8,10 @@ const ACTOR_ID: u64 = 42;
 
 #[tokio::test]
 async fn create_session_works() {
-    let remoting = GTestRemoting::new(ACTOR_ID.into());
+    let system = System::new();
+    system.init_logger();
+    system.mint_to(ACTOR_ID, 1_000_000_000_000_000);
+    let remoting = GTestRemoting::new(system, ACTOR_ID.into());
     remoting.system().init_logger();
 
     // Submit program code into the system
@@ -97,7 +100,10 @@ async fn create_session_works() {
 
 #[tokio::test]
 async fn create_session_failures() {
-    let remoting = GTestRemoting::new(ACTOR_ID.into());
+    let system = System::new();
+    system.init_logger();
+    system.mint_to(ACTOR_ID, 1_000_000_000_000_000);
+    let remoting = GTestRemoting::new(system, ACTOR_ID.into());
     remoting.system().init_logger();
 
     // Submit program code into the system
@@ -193,7 +199,10 @@ async fn create_session_failures() {
 
 #[tokio::test]
 async fn delete_session_from_account_works() {
-    let remoting = GTestRemoting::new(ACTOR_ID.into());
+    let system = System::new();
+    system.init_logger();
+    system.mint_to(ACTOR_ID, 1_000_000_000_000_000);
+    let remoting = GTestRemoting::new(system, ACTOR_ID.into());
     remoting.system().init_logger();
 
     // Submit program code into the system
