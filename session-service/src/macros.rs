@@ -98,20 +98,20 @@ macro_rules! generate_session_system {
                 let config = self.config();
                 let event =
                     panicking(|| create_session(sessions, config, signature_data, signature));
-                self.notify_on(event).expect("Notification Error");
+                self.emit_event(event).expect("Notification Error");
             }
 
             pub fn delete_session_from_program(&mut self, session_for_account: ActorId) {
                 let sessions = self.as_mut();
                 let event =
                     panicking(|| delete_session_from_program(sessions, session_for_account));
-                self.notify_on(event).expect("Notification Error");
+                self.emit_event(event).expect("Notification Error");
             }
 
             pub fn delete_session_from_account(&mut self) {
                 let sessions = self.as_mut();
                 let event = panicking(|| delete_session_from_account(sessions));
-                self.notify_on(event).expect("Notification Error");
+                self.emit_event(event).expect("Notification Error");
             }
 
             pub fn sessions(&self) -> Vec<(ActorId, SessionData)> {
