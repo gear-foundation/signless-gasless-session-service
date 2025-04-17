@@ -8,7 +8,7 @@
 /// use sails_rs::prelude::*;
 /// use session_service::*;
 /// pub struct SessionsProgram(());
-/// 
+///
 /// #[program]
 /// impl SessionsProgram {
 ///     pub async fn new(config: Config) -> Self {
@@ -19,7 +19,7 @@
 ///         SessionService::new()
 ///     }
 /// }
-/// 
+///
 /// #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
 /// #[codec(crate = sails_rs::scale_codec)]
 /// #[scale_info(crate = sails_rs::scale_info)]
@@ -220,7 +220,7 @@ macro_rules! generate_session_system {
                     });
                     signature_data.key
                 }
-                None => { 
+                None => {
                     check_if_session_exists(sessions, &msg_source)?;
                     sessions.entry(msg_source).insert(SessionData {
                         key: signature_data.key,

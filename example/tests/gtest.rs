@@ -1,6 +1,6 @@
-use sails_rs::{calls::*, gtest::calls::*, prelude::*};
-use sails_rs::gtest::System;
 use rand_core::OsRng;
+use sails_rs::gtest::System;
+use sails_rs::{calls::*, gtest::calls::*, prelude::*};
 use schnorrkel::Keypair;
 use sessions_client::{traits::*, ActionsForSession, Config, SignatureData};
 
