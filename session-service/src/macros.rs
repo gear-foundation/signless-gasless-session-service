@@ -50,6 +50,7 @@ macro_rules! generate_session_system {
         static mut STORAGE: Option<SessionMap> = None;
         static mut CONFIG: Option<Config> = None;
 
+        #[event]
         #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
         #[codec(crate = sails_rs::scale_codec)]
         #[scale_info(crate = sails_rs::scale_info)]
@@ -59,15 +60,18 @@ macro_rules! generate_session_system {
         }
 
         #[derive(Clone)]
-        pub struct SessionService(());
+        pub struct SessionService;
 
         impl SessionService {
+            pub fn new() -> Self {
+                Self
+            }
             pub fn init(config: Config) -> Self {
                 unsafe {
                     STORAGE = Some(HashMap::new());
                     CONFIG = Some(config);
                 }
-                Self(())
+                Self
             }
 
             pub fn as_mut(&mut self) -> &'static mut SessionMap {
@@ -85,10 +89,8 @@ macro_rules! generate_session_system {
 
         #[service(events = Event)]
         impl SessionService {
-            pub fn new() -> Self {
-                Self(())
-            }
 
+            #[export]
             pub fn create_session(
                 &mut self,
                 signature_data: SignatureData,
@@ -101,6 +103,7 @@ macro_rules! generate_session_system {
                 self.emit_event(event).expect("Notification Error");
             }
 
+            #[export]
             pub fn delete_session_from_program(&mut self, session_for_account: ActorId) {
                 let sessions = self.as_mut();
                 let event =
@@ -108,16 +111,19 @@ macro_rules! generate_session_system {
                 self.emit_event(event).expect("Notification Error");
             }
 
+            #[export]
             pub fn delete_session_from_account(&mut self) {
                 let sessions = self.as_mut();
                 let event = panicking(|| delete_session_from_account(sessions));
                 self.emit_event(event).expect("Notification Error");
             }
 
+            #[export]
             pub fn sessions(&self) -> Vec<(ActorId, SessionData)> {
                 self.as_ref().clone().into_iter().collect()
             }
 
+            #[export]
             pub fn session_for_the_account(&self, account: ActorId) -> Option<SessionData> {
                 self.as_ref().get(&account).cloned()
             }
