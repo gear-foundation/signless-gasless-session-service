@@ -60,18 +60,18 @@ macro_rules! generate_session_system {
         }
 
         #[derive(Clone)]
-        pub struct SessionService;
+        pub struct SessionService(());
 
         impl SessionService {
             pub fn new() -> Self {
-                Self
+                Self(())
             }
             pub fn init(config: Config) -> Self {
                 unsafe {
                     STORAGE = Some(HashMap::new());
                     CONFIG = Some(config);
                 }
-                Self
+                Self(())
             }
 
             pub fn as_mut(&mut self) -> &'static mut SessionMap {
