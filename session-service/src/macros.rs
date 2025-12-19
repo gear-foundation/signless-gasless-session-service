@@ -38,9 +38,9 @@
 #[macro_export]
 macro_rules! generate_session_system {
     ($actions_enum:ident) => {
-        use $crate::{exec, msg, PublicKey};
         use sails_rs::fmt::Debug;
         use sails_rs::{cell::RefCell, collections::HashMap, gstd::service};
+        use $crate::{exec, msg, PublicKey};
 
         pub type SessionMap = HashMap<ActorId, SessionData>;
 
