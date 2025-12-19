@@ -12,22 +12,25 @@ session-service = { git = "https://github.com/gear-foundation/signless-gasless-s
 use sails_rs::prelude::*;
 use session_service::*;
 
-pub struct Program(());
+pub struct SessionsProgram {
+    session_storage: RefCell<Storage>,
+}
 
 #[program]
 impl Program {
     pub async fn new(config: Config) -> Self {
         // Initialize your services
         ...
-        SessionService::init(config);
-        Self(())
+        Self {
+            session_storage: RefCell::new(Storage::new(config)),
+        }
     }
 
     // Define your services
     ...
 
-    pub fn session(&self) -> SessionService {
-        SessionService::new()
+    pub fn session(&self) -> SessionService<'_> {
+        SessionService::new(&self.session_storage)
     }
 }
 

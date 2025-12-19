@@ -2,17 +2,20 @@
 
 use sails_rs::prelude::*;
 use session_service::*;
-pub struct SessionsProgram(());
+pub struct SessionsProgram {
+    session_storage: RefCell<Storage>,
+}
 
-#[program]
+#[sails_rs::program]
 impl SessionsProgram {
     pub async fn new(config: Config) -> Self {
-        SessionService::init(config);
-        Self(())
+        Self {
+            session_storage: RefCell::new(Storage::new(config)),
+        }
     }
 
-    pub fn session(&self) -> SessionService {
-        SessionService::new()
+    pub fn session(&self) -> SessionService<'_> {
+        SessionService::new(&self.session_storage)
     }
 }
 

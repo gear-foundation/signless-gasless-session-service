@@ -4,5 +4,5 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-sails-rs.workspace = true
+sails-rs = {workspace = true, features = ["debug"]}
 session-service = { path = "../../session-service" }

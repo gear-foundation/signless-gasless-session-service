@@ -8,8 +8,7 @@ sessions-app = { path = "app" }
 
 [build-dependencies]
 sessions-app = { path = "app" }
-sails-rs = { workspace = true, features = ["wasm-builder"] }
-sails-idl-gen.workspace = true
+sails-rs = { version = "0.10.1", features = ["build"] }
 
 [dev-dependencies]
 sessions = { path = ".", features = ["wasm-binary"] }
