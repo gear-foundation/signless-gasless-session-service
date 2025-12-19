@@ -46,7 +46,7 @@ jobs:
 
       - name: Check client files
         run: |
-          CLIENT_RS_FILE="client/src/sessions_client.rs"
+          CLIENT_RS_FILE="example/client/src/sessions_client.rs"
           test -f $CLIENT_RS_FILE && git diff --exit-code $CLIENT_RS_FILE || (echo "$CLIENT_RS_FILE missing or modified" && exit 1)
-          CLIENT_IDL_FILE="client/sessions_client.idl"
+          CLIENT_IDL_FILE="example/client/sessions_client.idl"
           test -f $CLIENT_IDL_FILE && git diff --exit-code $CLIENT_IDL_FILE || (echo "$CLIENT_IDL_FILE missing or modified" && exit 1)
