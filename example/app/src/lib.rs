@@ -8,7 +8,7 @@ pub struct SessionsProgram {
 
 #[sails_rs::program]
 impl SessionsProgram {
-    pub async fn new(config: SessionConfig) -> Self {
+    pub fn new(config: SessionConfig) -> Self {
         Self {
             session_storage: RefCell::new(SessionStorage::new(config)),
         }
