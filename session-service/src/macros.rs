@@ -9,14 +9,14 @@
 /// use session_service::*;
 ///
 /// pub struct SessionsProgram{
-///     session_storage: RefCell<Storage>,
+///     session_storage: RefCell<SessionStorage>,
 /// }
 ///
 /// #[sails_rs::program]
 /// impl SessionsProgram {
 ///     pub async fn new(config: Config) -> Self {
 ///         Self {
-///             session_storage: RefCell::new(Storage::new(config)),
+///             session_storage: RefCell::new(SessionStorage::new(config)),
 ///         }
 ///     }
 ///
@@ -44,12 +44,12 @@ macro_rules! generate_session_system {
 
         pub type SessionMap = HashMap<ActorId, SessionData>;
 
-        pub struct Storage {
+        pub struct SessionStorage {
             sessions: SessionMap,
             config: Config,
         }
 
-        impl Storage {
+        impl SessionStorage {
             pub fn new(config: Config) -> Self {
                 Self {
                     sessions: HashMap::new(),
@@ -118,19 +118,19 @@ macro_rules! generate_session_system {
 
         #[derive(Clone)]
         pub struct SessionService<'a> {
-            storage: &'a RefCell<Storage>,
+            storage: &'a RefCell<SessionStorage>,
         }
 
         impl<'a> SessionService<'a> {
-            pub fn new(storage: &'a RefCell<Storage>) -> Self {
+            pub fn new(storage: &'a RefCell<SessionStorage>) -> Self {
                 Self { storage }
             }
 
-            fn get(&self) -> core::cell::Ref<'_, Storage> {
+            fn get(&self) -> core::cell::Ref<'_, SessionStorage> {
                 self.storage.borrow()
             }
 
-            fn get_mut(&self) -> core::cell::RefMut<'_, Storage> {
+            fn get_mut(&self) -> core::cell::RefMut<'_, SessionStorage> {
                 self.storage.borrow_mut()
             }
         }

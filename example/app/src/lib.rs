@@ -3,14 +3,14 @@
 use sails_rs::prelude::*;
 use session_service::*;
 pub struct SessionsProgram {
-    session_storage: RefCell<Storage>,
+    session_storage: RefCell<SessionStorage>,
 }
 
 #[sails_rs::program]
 impl SessionsProgram {
     pub async fn new(config: Config) -> Self {
         Self {
-            session_storage: RefCell::new(Storage::new(config)),
+            session_storage: RefCell::new(SessionStorage::new(config)),
         }
     }
 
