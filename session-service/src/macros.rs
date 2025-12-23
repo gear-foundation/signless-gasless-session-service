@@ -7,16 +7,21 @@
 /// #![no_std]
 /// use sails_rs::prelude::*;
 /// use session_service::*;
-/// pub struct SessionsProgram(());
 ///
-/// #[program]
+/// pub struct SessionsProgram{
+///     session_storage: RefCell<Storage>,
+/// }
+///
+/// #[sails_rs::program]
 /// impl SessionsProgram {
 ///     pub async fn new(config: Config) -> Self {
-///         SessionService::init(config);
-///         Self(())
+///         Self {
+///             session_storage: RefCell::new(Storage::new(config)),
+///         }
 ///     }
-///     pub fn session(&self) -> SessionService {
-///         SessionService::new()
+///
+///     pub fn session(&self) -> SessionService<'_> {
+///         SessionService::new(&self.session_storage)
 ///     }
 /// }
 ///
@@ -33,103 +38,25 @@
 #[macro_export]
 macro_rules! generate_session_system {
     ($actions_enum:ident) => {
-        use crate::{exec, msg, PublicKey};
         use sails_rs::fmt::Debug;
-        use sails_rs::{collections::HashMap, gstd::service};
-        use utils::panicking;
-
-        #[derive(Default)]
-        pub struct Storage(());
-
-        impl Storage {
-            pub fn get_session_map() -> &'static SessionMap {
-                unsafe { STORAGE.as_ref().expect("Storage is not initialized") }
-            }
-        }
-
-        static mut STORAGE: Option<SessionMap> = None;
-        static mut CONFIG: Option<Config> = None;
-
-        #[event]
-        #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
-        #[codec(crate = sails_rs::scale_codec)]
-        #[scale_info(crate = sails_rs::scale_info)]
-        pub enum Event {
-            SessionCreated,
-            SessionDeleted,
-        }
-
-        #[derive(Clone)]
-        pub struct SessionService(());
-
-        impl SessionService {
-            pub fn new() -> Self {
-                Self(())
-            }
-            pub fn init(config: Config) -> Self {
-                unsafe {
-                    STORAGE = Some(HashMap::new());
-                    CONFIG = Some(config);
-                }
-                Self(())
-            }
-
-            pub fn as_mut(&mut self) -> &'static mut SessionMap {
-                unsafe { STORAGE.as_mut().expect("Storage is not initialized") }
-            }
-
-            pub fn as_ref(&self) -> &'static SessionMap {
-                unsafe { STORAGE.as_ref().expect("Storage is not initialized") }
-            }
-
-            pub fn config(&self) -> &'static Config {
-                unsafe { CONFIG.as_ref().expect("Config is not initialized") }
-            }
-        }
-
-        #[service(events = Event)]
-        impl SessionService {
-
-            #[export]
-            pub fn create_session(
-                &mut self,
-                signature_data: SignatureData,
-                signature: Option<Vec<u8>>,
-            ) {
-                let sessions = self.as_mut();
-                let config = self.config();
-                let event =
-                    panicking(|| create_session(sessions, config, signature_data, signature));
-                self.emit_event(event).expect("Notification Error");
-            }
-
-            #[export]
-            pub fn delete_session_from_program(&mut self, session_for_account: ActorId) {
-                let sessions = self.as_mut();
-                let event =
-                    panicking(|| delete_session_from_program(sessions, session_for_account));
-                self.emit_event(event).expect("Notification Error");
-            }
-
-            #[export]
-            pub fn delete_session_from_account(&mut self) {
-                let sessions = self.as_mut();
-                let event = panicking(|| delete_session_from_account(sessions));
-                self.emit_event(event).expect("Notification Error");
-            }
-
-            #[export]
-            pub fn sessions(&self) -> Vec<(ActorId, SessionData)> {
-                self.as_ref().clone().into_iter().collect()
-            }
-
-            #[export]
-            pub fn session_for_the_account(&self, account: ActorId) -> Option<SessionData> {
-                self.as_ref().get(&account).cloned()
-            }
-        }
+        use sails_rs::{cell::RefCell, collections::HashMap, gstd::service};
+        use $crate::{exec, msg, PublicKey};
 
         pub type SessionMap = HashMap<ActorId, SessionData>;
+
+        pub struct Storage {
+            sessions: SessionMap,
+            config: Config,
+        }
+
+        impl Storage {
+            pub fn new(config: Config) -> Self {
+                Self {
+                    sessions: HashMap::new(),
+                    config,
+                }
+            }
+        }
 
         #[derive(Debug, Default, Clone, Copy, Encode, Decode, TypeInfo, PartialEq, Eq)]
         #[codec(crate = sails_rs::scale_codec)]
@@ -138,21 +65,6 @@ macro_rules! generate_session_system {
             pub gas_to_delete_session: u64,
             pub minimum_session_duration_ms: u64,
             pub ms_per_block: u64,
-        }
-
-        #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
-        #[codec(crate = sails_rs::scale_codec)]
-        #[scale_info(crate = sails_rs::scale_info)]
-        pub enum SessionError {
-            BadSignature,
-            BadPublicKey,
-            VerificationFailed,
-            DurationIsSmall,
-            ThereAreNoAllowedMessages,
-            MessageOnlyForProgram,
-            TooEarlyToDeleteSession,
-            NoSession,
-            AlreadyHaveActiveSession,
         }
 
         // This structure is for creating a gaming session, which allows players to predefine certain actions for an account
@@ -179,107 +91,190 @@ macro_rules! generate_session_system {
             pub allowed_actions: Vec<$actions_enum>,
         }
 
-        pub fn create_session(
-            sessions: &mut SessionMap,
-            config: &Config,
-            signature_data: SignatureData,
-            signature: Option<Vec<u8>>,
-        ) -> Result<Event, SessionError> {
-            if signature_data.duration < config.minimum_session_duration_ms {
-                return Err(SessionError::DurationIsSmall);
+        #[event]
+        #[derive(Debug, Clone, Encode, Decode, TypeInfo, PartialEq, Eq)]
+        #[codec(crate = sails_rs::scale_codec)]
+        #[scale_info(crate = sails_rs::scale_info)]
+        pub enum SessionEvent {
+            SessionCreated,
+            SessionDeleted,
+        }
+
+        #[derive(Debug)]
+        pub enum SessionError {
+            BadSignature,
+            BadPublicKey,
+            VerificationFailed,
+            DurationIsSmall,
+            DurationIsLarge,
+            ThereAreNoAllowedMessages,
+            MessageOnlyForProgram,
+            TooEarlyToDeleteSession,
+            NoSession,
+            AlreadyHaveActiveSession,
+            SendMessageFailed,
+            EmitEventFailed,
+        }
+
+        #[derive(Clone)]
+        pub struct SessionService<'a> {
+            storage: &'a RefCell<Storage>,
+        }
+
+        impl<'a> SessionService<'a> {
+            pub fn new(storage: &'a RefCell<Storage>) -> Self {
+                Self { storage }
             }
 
-            let msg_source = msg::source();
-            let block_timestamp = exec::block_timestamp();
-            let block_height = exec::block_height();
-
-            let expires = block_timestamp + signature_data.duration;
-
-            let number_of_blocks =
-                u32::try_from(signature_data.duration.div_ceil(config.ms_per_block))
-                    .expect("Duration is too large");
-
-            if signature_data.allowed_actions.is_empty() {
-                return Err(SessionError::ThereAreNoAllowedMessages);
+            fn get(&self) -> core::cell::Ref<'_, Storage> {
+                self.storage.borrow()
             }
 
-            let account = match signature {
-                Some(sig_bytes) => {
-                    check_if_session_exists(sessions, &signature_data.key)?;
-                    let pub_key: [u8; 32] = (signature_data.key).into();
-                    let message = SignatureData {
-                        key: msg_source,
-                        duration: signature_data.duration,
-                        allowed_actions: signature_data.allowed_actions.clone(),
+            fn get_mut(&self) -> core::cell::RefMut<'_, Storage> {
+                self.storage.borrow_mut()
+            }
+        }
+
+        #[sails_rs::service(events = SessionEvent)]
+        impl<'a> SessionService<'a> {
+            #[export(unwrap_result)]
+            pub fn create_session(
+                &mut self,
+                signature_data: SignatureData,
+                signature: Option<Vec<u8>>,
+            ) -> Result<(), SessionError> {
+                let mut storage = self.get_mut();
+
+                if signature_data.duration < storage.config.minimum_session_duration_ms {
+                    return Err(SessionError::DurationIsSmall);
+                }
+
+                let msg_source = msg::source();
+                let block_timestamp = exec::block_timestamp();
+                let block_height = exec::block_height();
+
+                let expires = block_timestamp + signature_data.duration;
+
+                let number_of_blocks = u32::try_from(
+                    signature_data
+                        .duration
+                        .div_ceil(storage.config.ms_per_block),
+                )
+                .map_err(|_| SessionError::DurationIsLarge)?;
+
+                if signature_data.allowed_actions.is_empty() {
+                    return Err(SessionError::ThereAreNoAllowedMessages);
+                }
+
+                let account = match signature {
+                    Some(sig_bytes) => {
+                        check_if_session_exists(&storage.sessions, &signature_data.key)?;
+                        let pub_key: [u8; 32] = (signature_data.key).into();
+                        let message = SignatureData {
+                            key: msg_source,
+                            duration: signature_data.duration,
+                            allowed_actions: signature_data.allowed_actions.clone(),
+                        }
+                        .encode();
+
+                        let mut complete_message = Vec::with_capacity(
+                            b"<Bytes>".len() + message.len() + b"</Bytes>".len(),
+                        );
+                        complete_message.extend_from_slice(b"<Bytes>");
+                        complete_message.extend_from_slice(&message);
+                        complete_message.extend_from_slice(b"</Bytes>");
+
+                        verify(&sig_bytes, complete_message, pub_key)?;
+                        storage
+                            .sessions
+                            .entry(signature_data.key)
+                            .insert(SessionData {
+                                key: msg_source,
+                                expires,
+                                allowed_actions: signature_data.allowed_actions,
+                                expires_at_block: block_height + number_of_blocks,
+                            });
+                        signature_data.key
                     }
-                    .encode();
+                    None => {
+                        check_if_session_exists(&storage.sessions, &msg_source)?;
+                        storage.sessions.entry(msg_source).insert(SessionData {
+                            key: signature_data.key,
+                            expires,
+                            allowed_actions: signature_data.allowed_actions,
+                            expires_at_block: block_height + number_of_blocks,
+                        });
+                        msg_source
+                    }
+                };
 
-                    let complete_message =
-                        [b"<Bytes>".to_vec(), message, b"</Bytes>".to_vec()].concat();
+                let request = [
+                    "Session".encode(),
+                    "DeleteSessionFromProgram".to_string().encode(),
+                    (account).encode(),
+                ]
+                .concat();
 
-                    verify(&sig_bytes, complete_message, pub_key)?;
-                    sessions.entry(signature_data.key).insert(SessionData {
-                        key: msg_source,
-                        expires,
-                        allowed_actions: signature_data.allowed_actions,
-                        expires_at_block: block_height + number_of_blocks,
-                    });
-                    signature_data.key
-                }
-                None => {
-                    check_if_session_exists(sessions, &msg_source)?;
-                    sessions.entry(msg_source).insert(SessionData {
-                        key: signature_data.key,
-                        expires,
-                        allowed_actions: signature_data.allowed_actions,
-                        expires_at_block: block_height + number_of_blocks,
-                    });
-                    msg_source
-                }
-            };
+                msg::send_bytes_with_gas_delayed(
+                    exec::program_id(),
+                    request,
+                    storage.config.gas_to_delete_session,
+                    0,
+                    number_of_blocks,
+                )
+                .map_err(|_| SessionError::SendMessageFailed)?;
 
-            let request = [
-                "Session".encode(),
-                "DeleteSessionFromProgram".to_string().encode(),
-                (account).encode(),
-            ]
-            .concat();
-
-            msg::send_bytes_with_gas_delayed(
-                exec::program_id(),
-                request,
-                config.gas_to_delete_session,
-                0,
-                number_of_blocks,
-            )
-            .expect("Error in sending message");
-
-            Ok(Event::SessionCreated)
-        }
-
-        pub fn delete_session_from_program(
-            sessions: &mut SessionMap,
-            session_for_account: ActorId,
-        ) -> Result<Event, SessionError> {
-            if msg::source() != exec::program_id() {
-                return Err(SessionError::MessageOnlyForProgram);
+                self.emit_event(SessionEvent::SessionCreated)
+                    .map_err(|_| SessionError::EmitEventFailed)?;
+                Ok(())
             }
 
-            if let Some(session) = sessions.remove(&session_for_account) {
-                if session.expires_at_block > exec::block_height() {
-                    return Err(SessionError::TooEarlyToDeleteSession);
+            #[export(unwrap_result)]
+            pub fn delete_session_from_program(
+                &mut self,
+                session_for_account: ActorId,
+            ) -> Result<(), SessionError> {
+                if msg::source() != exec::program_id() {
+                    return Err(SessionError::MessageOnlyForProgram);
                 }
-            }
-            Ok(Event::SessionDeleted)
-        }
 
-        pub fn delete_session_from_account(
-            sessions: &mut SessionMap,
-        ) -> Result<Event, SessionError> {
-            if sessions.remove(&msg::source()).is_none() {
-                return Err(SessionError::NoSession);
+                let mut storage = self.get_mut();
+
+                if let Some(session) = storage.sessions.remove(&session_for_account) {
+                    if session.expires_at_block > exec::block_height() {
+                        return Err(SessionError::TooEarlyToDeleteSession);
+                    }
+                }
+                self.emit_event(SessionEvent::SessionDeleted)
+                    .map_err(|_| SessionError::EmitEventFailed)?;
+                Ok(())
             }
-            Ok(Event::SessionDeleted)
+
+            #[export(unwrap_result)]
+            pub fn delete_session_from_account(&mut self) -> Result<(), SessionError> {
+                let mut storage = self.get_mut();
+                if storage.sessions.remove(&msg::source()).is_none() {
+                    return Err(SessionError::NoSession);
+                }
+
+                self.emit_event(SessionEvent::SessionDeleted)
+                    .map_err(|_| SessionError::EmitEventFailed)?;
+                Ok(())
+            }
+
+            #[export]
+            pub fn sessions(&self) -> Vec<(ActorId, SessionData)> {
+                self.get()
+                    .sessions
+                    .iter()
+                    .map(|(k, v)| (*k, v.clone()))
+                    .collect()
+            }
+
+            #[export]
+            pub fn session_for_the_account(&self, account: ActorId) -> Option<SessionData> {
+                self.get().sessions.get(&account).cloned()
+            }
         }
 
         fn verify<P: AsRef<[u8]>, M: AsRef<[u8]>>(

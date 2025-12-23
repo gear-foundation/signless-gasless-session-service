@@ -1,0 +1,42 @@
+type Config = struct {
+  gas_to_delete_session: u64,
+  minimum_session_duration_ms: u64,
+  ms_per_block: u64,
+};
+
+type SignatureData = struct {
+  key: actor_id,
+  duration: u64,
+  allowed_actions: vec ActionsForSession,
+};
+
+type ActionsForSession = enum {
+  StartGame,
+  Move,
+  Skip,
+};
+
+type SessionData = struct {
+  key: actor_id,
+  expires: u64,
+  allowed_actions: vec ActionsForSession,
+  expires_at_block: u32,
+};
+
+constructor {
+  New : (config: Config);
+};
+
+service Session {
+  CreateSession : (signature_data: SignatureData, signature: opt vec u8) -> null;
+  DeleteSessionFromAccount : () -> null;
+  DeleteSessionFromProgram : (session_for_account: actor_id) -> null;
+  query SessionForTheAccount : (account: actor_id) -> opt SessionData;
+  query Sessions : () -> vec struct { actor_id, SessionData };
+
+  events {
+    SessionCreated;
+    SessionDeleted;
+  }
+};
+

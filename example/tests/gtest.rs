@@ -1,23 +1,30 @@
 use rand_core::OsRng;
-use sails_rs::gtest::System;
-use sails_rs::{calls::*, gtest::calls::*, prelude::*};
+use sails_rs::futures::StreamExt;
+use sails_rs::gtest::constants::{DEFAULT_USERS_INITIAL_BALANCE, DEFAULT_USER_ALICE};
+use sails_rs::{client::*, gtest::*, ActorId, CodeId, Encode};
 use schnorrkel::Keypair;
-use sessions_client::{traits::*, ActionsForSession, Config, SignatureData};
+use sessions_client::session::events::SessionEvents;
+use sessions_client::{
+    session::*, ActionsForSession, Config, SessionsClient, SessionsClientCtors, SignatureData,
+};
 
-const ACTOR_ID: u64 = 42;
+fn create_env() -> (GtestEnv, CodeId) {
+    let system = System::new();
+    system.init_logger_with_default_filter("gwasm=debug,gtest=info,sails_rs=debug,redirect=debug");
+    system.mint_to(DEFAULT_USER_ALICE, DEFAULT_USERS_INITIAL_BALANCE);
+    // Submit program code into the system
+    let code_id = system.submit_code(sessions::WASM_BINARY);
+
+    // Create a remoting instance for the system
+    // and set the block run mode to Next,
+    // cause we don't receive any reply on `Exit` call
+    let env = GtestEnv::new(system, DEFAULT_USER_ALICE.into());
+    (env, code_id)
+}
 
 #[tokio::test]
 async fn create_session_works() {
-    let system = System::new();
-    system.init_logger();
-    system.mint_to(ACTOR_ID, 1_000_000_000_000_000);
-    let remoting = GTestRemoting::new(system, ACTOR_ID.into());
-    remoting.system().init_logger();
-
-    // Submit program code into the system
-    let program_code_id = remoting.system().submit_code(sessions::WASM_BINARY);
-
-    let program_factory = sessions_client::SessionsFactory::new(remoting.clone());
+    let (env, program_code_id) = create_env();
 
     let config = Config {
         gas_to_delete_session: 10_000_000_000,
@@ -25,13 +32,16 @@ async fn create_session_works() {
         ms_per_block: 3_000,
     };
 
-    let program_id = program_factory
+    let program = env
+        .deploy::<sessions_client::SessionsClientProgram>(program_code_id, b"salt".to_vec())
         .new(config)
-        .send_recv(program_code_id, b"salt")
         .await
         .unwrap();
 
-    let mut service_client = sessions_client::Session::new(remoting.clone());
+    let mut service_client = program.session();
+
+    let service_listener = service_client.listener();
+    let mut service_events = service_listener.listen().await.unwrap();
 
     let key = 10;
 
@@ -41,17 +51,19 @@ async fn create_session_works() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
+    service_client
         .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+        .await
+        .unwrap();
 
-    assert!(result.is_ok());
+    assert_eq!(
+        service_events.next().await.unwrap(),
+        (program.id(), SessionEvents::SessionCreated)
+    );
 
     // check session in state
     let result = service_client
-        .session_for_the_account(ACTOR_ID.into())
-        .recv(program_id)
+        .session_for_the_account(DEFAULT_USER_ALICE.into())
         .await
         .unwrap();
 
@@ -60,7 +72,7 @@ async fn create_session_works() {
     // create session with signature
     let pair: Keypair = Keypair::generate_with(OsRng);
     let data_to_sign = SignatureData {
-        key: ACTOR_ID.into(),
+        key: DEFAULT_USER_ALICE.into(),
         duration: 180_000,
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
@@ -81,35 +93,25 @@ async fn create_session_works() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
+    service_client
         .create_session(signature_data, Some(raw_signature.to_vec()))
-        .send_recv(program_id)
-        .await;
-
-    assert!(result.is_ok());
-
-    // check session in state
-    let result = service_client
-        .session_for_the_account(key)
-        .recv(program_id)
         .await
         .unwrap();
+
+    assert_eq!(
+        service_events.next().await.unwrap(),
+        (program.id(), SessionEvents::SessionCreated)
+    );
+
+    // check session in state
+    let result = service_client.session_for_the_account(key).await.unwrap();
 
     assert!(result.is_some());
 }
 
 #[tokio::test]
 async fn create_session_failures() {
-    let system = System::new();
-    system.init_logger();
-    system.mint_to(ACTOR_ID, 1_000_000_000_000_000);
-    let remoting = GTestRemoting::new(system, ACTOR_ID.into());
-    remoting.system().init_logger();
-
-    // Submit program code into the system
-    let program_code_id = remoting.system().submit_code(sessions::WASM_BINARY);
-
-    let program_factory = sessions_client::SessionsFactory::new(remoting.clone());
+    let (env, program_code_id) = create_env();
 
     let config = Config {
         gas_to_delete_session: 10_000_000_000,
@@ -117,13 +119,16 @@ async fn create_session_failures() {
         ms_per_block: 3_000,
     };
 
-    let program_id = program_factory
+    let program = env
+        .deploy::<sessions_client::SessionsClientProgram>(program_code_id, b"salt".to_vec())
         .new(config)
-        .send_recv(program_code_id, b"salt")
         .await
         .unwrap();
 
-    let mut service_client = sessions_client::Session::new(remoting.clone());
+    let mut service_client = program.session();
+
+    let service_listener = service_client.listener();
+    let mut service_events = service_listener.listen().await.unwrap();
 
     // duration is less than minimum session duration
     let key = 10;
@@ -134,10 +139,7 @@ async fn create_session_failures() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
-        .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+    let result = service_client.create_session(signature_data, None).await;
 
     assert!(result.is_err());
 
@@ -148,10 +150,7 @@ async fn create_session_failures() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
-        .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+    let result = service_client.create_session(signature_data, None).await;
 
     assert!(result.is_err());
 
@@ -162,10 +161,7 @@ async fn create_session_failures() {
         allowed_actions: vec![],
     };
 
-    let result = service_client
-        .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+    let result = service_client.create_session(signature_data, None).await;
 
     assert!(result.is_err());
 
@@ -176,12 +172,15 @@ async fn create_session_failures() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
+    service_client
         .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+        .await
+        .unwrap();
 
-    assert!(result.is_ok());
+    assert_eq!(
+        service_events.next().await.unwrap(),
+        (program.id(), SessionEvents::SessionCreated)
+    );
 
     let signature_data = SignatureData {
         key: key.into(),
@@ -189,26 +188,14 @@ async fn create_session_failures() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
-        .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+    let result = service_client.create_session(signature_data, None).await;
 
     assert!(result.is_err())
 }
 
 #[tokio::test]
 async fn delete_session_from_account_works() {
-    let system = System::new();
-    system.init_logger();
-    system.mint_to(ACTOR_ID, 1_000_000_000_000_000);
-    let remoting = GTestRemoting::new(system, ACTOR_ID.into());
-    remoting.system().init_logger();
-
-    // Submit program code into the system
-    let program_code_id = remoting.system().submit_code(sessions::WASM_BINARY);
-
-    let program_factory = sessions_client::SessionsFactory::new(remoting.clone());
+    let (env, program_code_id) = create_env();
 
     let config = Config {
         gas_to_delete_session: 10_000_000_000,
@@ -216,13 +203,16 @@ async fn delete_session_from_account_works() {
         ms_per_block: 3_000,
     };
 
-    let program_id = program_factory
+    let program = env
+        .deploy::<sessions_client::SessionsClientProgram>(program_code_id, b"salt".to_vec())
         .new(config)
-        .send_recv(program_code_id, b"salt")
         .await
         .unwrap();
 
-    let mut service_client = sessions_client::Session::new(remoting.clone());
+    let mut service_client = program.session();
+
+    let service_listener = service_client.listener();
+    let mut service_events = service_listener.listen().await.unwrap();
 
     // duration is less than minimum session duration
     let key = 10;
@@ -233,24 +223,26 @@ async fn delete_session_from_account_works() {
         allowed_actions: vec![ActionsForSession::StartGame, ActionsForSession::Move],
     };
 
-    let result = service_client
+    service_client
         .create_session(signature_data, None)
-        .send_recv(program_id)
-        .await;
+        .await
+        .unwrap();
 
-    assert!(result.is_ok());
+    assert_eq!(
+        service_events.next().await.unwrap(),
+        (program.id(), SessionEvents::SessionCreated)
+    );
 
-    let result = service_client
-        .delete_session_from_account()
-        .send_recv(program_id)
-        .await;
+    service_client.delete_session_from_account().await.unwrap();
 
-    assert!(result.is_ok());
+    assert_eq!(
+        service_events.next().await.unwrap(),
+        (program.id(), SessionEvents::SessionDeleted)
+    );
 
     // check state
     let result = service_client
-        .session_for_the_account(ACTOR_ID.into())
-        .recv(program_id)
+        .session_for_the_account(DEFAULT_USER_ALICE.into())
         .await
         .unwrap();
 

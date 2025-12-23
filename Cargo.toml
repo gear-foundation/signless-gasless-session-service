@@ -10,9 +10,9 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-gstd = "=1.9.1"
-sails-idl-gen = "=0.9.1"
-sails-client-gen = "=0.9.1"
-sails-rs = "=0.9.1"
+gstd = "=1.10.0"
+sails-idl-gen = "=0.10.1"
+sails-client-gen = "=0.10.1"
+sails-rs = "=0.10.1"
 tokio = { version = "1.39", features = ["rt", "macros"] }
 schnorrkel = { version = "0.10", default-features = false, features = ["u64_backend"] }
