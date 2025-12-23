@@ -1,4 +1,4 @@
-type Config = struct {
+type SessionConfig = struct {
   gas_to_delete_session: u64,
   minimum_session_duration_ms: u64,
   ms_per_block: u64,
@@ -24,7 +24,7 @@ type SessionData = struct {
 };
 
 constructor {
-  New : (config: Config);
+  New : (config: SessionConfig);
 };
 
 service Session {

@@ -14,7 +14,7 @@
 ///
 /// #[sails_rs::program]
 /// impl SessionsProgram {
-///     pub async fn new(config: Config) -> Self {
+///     pub async fn new(config: SessionConfig) -> Self {
 ///         Self {
 ///             session_storage: RefCell::new(SessionStorage::new(config)),
 ///         }
@@ -46,11 +46,11 @@ macro_rules! generate_session_system {
 
         pub struct SessionStorage {
             sessions: SessionMap,
-            config: Config,
+            config: SessionConfig,
         }
 
         impl SessionStorage {
-            pub fn new(config: Config) -> Self {
+            pub fn new(config: SessionConfig) -> Self {
                 Self {
                     sessions: HashMap::new(),
                     config,
@@ -61,7 +61,7 @@ macro_rules! generate_session_system {
         #[derive(Debug, Default, Clone, Copy, Encode, Decode, TypeInfo, PartialEq, Eq)]
         #[codec(crate = sails_rs::scale_codec)]
         #[scale_info(crate = sails_rs::scale_info)]
-        pub struct Config {
+        pub struct SessionConfig {
             pub gas_to_delete_session: u64,
             pub minimum_session_duration_ms: u64,
             pub ms_per_block: u64,

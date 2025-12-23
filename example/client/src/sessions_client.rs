@@ -21,7 +21,7 @@ pub trait SessionsClientCtors {
     #[allow(clippy::wrong_self_convention)]
     fn new(
         self,
-        config: Config,
+        config: SessionConfig,
     ) -> sails_rs::client::PendingCtor<SessionsClientProgram, io::New, Self::Env>;
 }
 impl<E: sails_rs::client::GearEnv> SessionsClientCtors
@@ -30,7 +30,7 @@ impl<E: sails_rs::client::GearEnv> SessionsClientCtors
     type Env = E;
     fn new(
         self,
-        config: Config,
+        config: SessionConfig,
     ) -> sails_rs::client::PendingCtor<SessionsClientProgram, io::New, Self::Env> {
         self.pending_ctor((config,))
     }
@@ -38,7 +38,7 @@ impl<E: sails_rs::client::GearEnv> SessionsClientCtors
 
 pub mod io {
     use super::*;
-    sails_rs::io_struct_impl!(New (config: super::Config) -> ());
+    sails_rs::io_struct_impl!(New (config: super::SessionConfig) -> ());
 }
 
 pub mod session {
@@ -124,7 +124,7 @@ pub mod session {
 #[derive(PartialEq, Clone, Debug, Encode, Decode, TypeInfo)]
 #[codec(crate = sails_rs::scale_codec)]
 #[scale_info(crate = sails_rs::scale_info)]
-pub struct Config {
+pub struct SessionConfig {
     pub gas_to_delete_session: u64,
     pub minimum_session_duration_ms: u64,
     pub ms_per_block: u64,

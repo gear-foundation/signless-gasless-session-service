@@ -5,7 +5,7 @@ use sails_rs::{client::*, gtest::*, ActorId, CodeId, Encode};
 use schnorrkel::Keypair;
 use sessions_client::session::events::SessionEvents;
 use sessions_client::{
-    session::*, ActionsForSession, Config, SessionsClient, SessionsClientCtors, SignatureData,
+    session::*, ActionsForSession, SessionConfig, SessionsClient, SessionsClientCtors, SignatureData,
 };
 
 fn create_env() -> (GtestEnv, CodeId) {
@@ -26,7 +26,7 @@ fn create_env() -> (GtestEnv, CodeId) {
 async fn create_session_works() {
     let (env, program_code_id) = create_env();
 
-    let config = Config {
+    let config = SessionConfig {
         gas_to_delete_session: 10_000_000_000,
         minimum_session_duration_ms: 180_000,
         ms_per_block: 3_000,
@@ -113,7 +113,7 @@ async fn create_session_works() {
 async fn create_session_failures() {
     let (env, program_code_id) = create_env();
 
-    let config = Config {
+    let config = SessionConfig {
         gas_to_delete_session: 10_000_000_000,
         minimum_session_duration_ms: 180_000,
         ms_per_block: 3_000,
@@ -197,7 +197,7 @@ async fn create_session_failures() {
 async fn delete_session_from_account_works() {
     let (env, program_code_id) = create_env();
 
-    let config = Config {
+    let config = SessionConfig {
         gas_to_delete_session: 10_000_000_000,
         minimum_session_duration_ms: 180_000,
         ms_per_block: 3_000,
