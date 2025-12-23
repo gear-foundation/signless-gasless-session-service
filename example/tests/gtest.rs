@@ -5,7 +5,8 @@ use sails_rs::{client::*, gtest::*, ActorId, CodeId, Encode};
 use schnorrkel::Keypair;
 use sessions_client::session::events::SessionEvents;
 use sessions_client::{
-    session::*, ActionsForSession, SessionConfig, SessionsClient, SessionsClientCtors, SignatureData,
+    session::*, ActionsForSession, SessionConfig, SessionsClient, SessionsClientCtors,
+    SignatureData,
 };
 
 fn create_env() -> (GtestEnv, CodeId) {

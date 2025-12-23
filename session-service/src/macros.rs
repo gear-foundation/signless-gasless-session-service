@@ -56,6 +56,34 @@ macro_rules! generate_session_system {
                     config,
                 }
             }
+            pub fn get_original_address(
+                &self,
+                msg_source: &ActorId,
+                session_for_account: &Option<ActorId>,
+                actions_for_session: ActionsForSession,
+            ) -> Result<ActorId, SessionError> {
+                let original_address = match session_for_account {
+                    Some(account) => {
+                        let session = self
+                            .sessions
+                            .get(account)
+                            .ok_or(SessionError::NoValidSession)?;
+
+                        if session.expires <= exec::block_timestamp() {
+                            return Err(SessionError::SessionExpired);
+                        }
+                        if !session.allowed_actions.contains(&actions_for_session) {
+                            return Err(SessionError::MessageIsNotAllowed);
+                        }
+                        if session.key != *msg_source {
+                            return Err(SessionError::AccountNotApproved);
+                        }
+                        *account
+                    }
+                    None => *msg_source,
+                };
+                Ok(original_address)
+            }
         }
 
         #[derive(Debug, Default, Clone, Copy, Encode, Decode, TypeInfo, PartialEq, Eq)]
@@ -114,6 +142,10 @@ macro_rules! generate_session_system {
             AlreadyHaveActiveSession,
             SendMessageFailed,
             EmitEventFailed,
+            NoValidSession,
+            SessionExpired,
+            MessageIsNotAllowed,
+            AccountNotApproved,
         }
 
         #[derive(Clone)]
